@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Криптоанализ Pro | AI Прогнозы</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0A0C10; color: #E0E3E8; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .header, .stats-grid, .cards-grid, .charts-grid, .comparison-section, .sentiment-card, .ai-forecast-section { animation: fadeInUp 0.5s ease-out; }
+        .tab-content { animation: fadeIn 0.3s ease-out; }
+        .crypto-card, .stat-card { transition: all 0.3s ease; }
+        .crypto-card:hover, .stat-card:hover { transform: translateY(-4px); border-color: #F7931A; }
+        .tab-btn { transition: all 0.25s ease; cursor: pointer; }
+        .tab-btn:hover:not(.active) { background: #2A2E35; color: #F7931A; }
+        .tab-btn.active { background: #F7931A; color: #0A0C10; }
+
+        /* ... (ВСЕ ОСТАЛЬНЫЕ СТИЛИ ИЗ ВАШЕГО КОДА) ... */
+        /* Вставьте сюда весь ваш CSS из предыдущих сообщений */
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Шапка (Убраны кнопки выбора языка) -->
+    <div class="header">
+        <div class="title"><h1>📊 Криптоанализ Pro</h1><p>AI Прогнозы | Трендовые линии | Уровни Support/Resistance</p></div>
+        <div class="header-controls">
+            <!-- <div class="lang-selector">...</div> УДАЛЕНО -->
+            <div class="currency-selector"><button class="currency-btn active" data-currency="usd">USD</button><button class="currency-btn" data-currency="eur">EUR</button><button class="currency-btn" data-currency="rub">RUB</button></div>
+            <div class="update-badge" id="updateTime">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Вкладки -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="analytics"><i class="fas fa-chart-line"></i> Аналитика</button>
+        <button class="tab-btn" data-tab="forecast"><i class="fas fa-robot"></i> 🤖 AI Прогнозы</button>
+        <button class="tab-btn" data-tab="markets"><i class="fas fa-table-list"></i> Рынки</button>
+        <button class="tab-btn" data-tab="exchange"><i class="fas fa-exchange-alt"></i> Обмен</button>
+        <button class="tab-btn" data-tab="tips"><i class="fas fa-lightbulb"></i> Советы</button>
+    </div>
+
+    <!-- Остальной HTML (Вкладки Аналитика, Прогнозы и т.д.) -->
+    <!-- ... -->
+
+    <div class="footer"><span>📊 Расширенная аналитика | AI Прогнозы | Трендовые линии | Уровни S/R | Данные: CoinGecko API</span><div class="author">© 2026 · Создано учеником группы ИСП-25-5 СА</div></div>
+</div>
+
+<script>
+// --- НАЧАЛО СКРИПТА ---
+let currentCurrency = 'usd';
+let currentAmountCurrency = 'usd';
+let exchangeRates = { usd: 1, eur: 0.92, rub: 91.5 };
+let allCoins = [];
+let currentChartCoin = 'bitcoin';
+let currentPeriod = 30;
+let priceChart = null, volumeChart = null, comparisonChart = null, trendChart = null;
+let comparisonDays = 7;
+let currentTradeType = 'buy';
+let currentExchangeCoin = 'bitcoin';
+let currentExchangePrice = 67250;
+let filteredCoins = [];
+let currentPage = 1;
+let sortField = 'rank';
+let sortDir = 'asc';
+let itemsPerPage = 15;
+let chartDataCache = {};
+let searchTimeout = null;
+let currentForecastCoin = 'bitcoin';
+
+const currencySymbol = { usd: '$', eur: '€', rub: '₽' };
+const currencyName = { usd: 'USD', eur: 'EUR', rub: 'RUB' };
+const coinSymbols = { bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', cardano: 'ADA', dogecoin: 'DOGE', ripple: 'XRP' };
+
+// --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ИНДИКАТОРОВ ---
+function calculateEMA(prices, period) {
+    if(prices.length === 0) return 0;
+    const k = 2 / (period + 1);
+    let ema = prices[0];
+    for(let i = 1; i < prices.length; i++) ema = prices[i] * k + ema * (1 - k);
+    return ema;
+}
+
+function calculateRSI(prices, period=14) {
+    if(prices.length < period+1) return 50;
+    let gains=0, losses=0;
+    for(let i=prices.length-period; i<prices.length-1; i++) {
+        let diff = prices[i+1]-prices[i];
+        if(diff>=0) gains+=diff; else losses-=diff;
+    }
+    let avgGain=gains/period, avgLoss=losses/period;
+    if(avgLoss===0) return 100;
+    return 100 - (100/(1+avgGain/avgLoss));
+}
+
+// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ MACD ---
+function calculateMACD(prices, fast=12, slow=26, signal=9) {
+    if (prices.length < slow) return { macd: "—", signal: "—", histogram: "—" };
+
+    const kFast = 2 / (fast + 1);
+    const kSlow = 2 / (slow + 1);
+
+    let emaFast = prices[0];
+    let emaSlow = prices[0];
+
+    const macdLineValues = [];
+
+    for (let i = 1; i < prices.length; i++) {
+        emaFast = prices[i] * kFast + emaFast * (1 - kFast);
+        emaSlow = prices[i] * kSlow + emaSlow * (1 - kSlow);
+        
+        const macdValue = emaFast - emaSlow;
+        
+        macdLineValues.push(macdValue);
+        
+        if (macdLineValues.length >= signal) {
+            const signalLineEMA = calculateEMA(macdLineValues.slice(-signal), signal);
+            return {
+                macd: macdValue.toFixed(2),
+                signal: signalLineEMA.toFixed(2),
+                histogram: (macdValue - signalLineEMA).toFixed(2)
+            };
+        }
+    }
+    
+    return {
+        macd: macdLineValues[macdLineValues.length - 1]?.toFixed(2) || "—",
+        signal: "—",
+        histogram: "—"
+    };
+}
+// --- КОНЕЦ ИСПРАВЛЕНИЙ ---
+
+
+// --- ОСТАЛЬНОЙ JAVASCRIPT ---
+// Здесь должны быть все остальные ваши функции:
+// calculateVolatility(prices), calculateATR(prices), getAIForecast(prices), findSupportResistance(prices), determineTrend(prices), getRecommendation(...),
+// а также функции отрисовки графиков drawTrendChart(), updateCharts(), updateComparison(), renderCards(), renderMarkets(), updateExchange(), loadGlobalStats(), loadData().
+// Все они остаются без изменений.
+
+
+// --- ИНИЦИАЛИЗАЦИЯ ---
+function setupEvents() {
+   // Убраны обработчики для кнопок языка (.lang-btn)
+   
+   // Обработчики для валют остались
+   document.querySelectorAll('.currency-btn').forEach(btn => btn.addEventListener('click', () => { 
+       currentCurrency = btn.dataset.currency; 
+       document.querySelectorAll('.currency-btn').forEach(b=>b.classList.remove('active')); 
+       btn.classList.add('active'); 
+       renderCards(); 
+       renderMarkets(); 
+       updateCharts(); 
+       updateExchange(); 
+       updateAIForecast(); 
+   }));
+   
+   // Остальные обработчики событий остаются без изменений.
+   document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { /* ... */ }));
+   // ... и все остальные обработчики из вашего кода ...
+}
+
+
+setupEvents();
+loadData();
+setInterval(() => loadData(), 120000);
+// --- КОНЕЦ СКРИПТА ---
+</script>
+</body>
+</html>
